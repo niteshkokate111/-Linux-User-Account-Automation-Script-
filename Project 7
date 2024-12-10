@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# Check for root privileges
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 
+   exit 1
+fi
+
+# Function to create users
+create_user() {
+    local username=$1
+    local password=$2
+    local group=$3
+
+    # Check if user already exists
+    if id "$username" &>/dev/null; then
+        echo "User $username already exists."
+        return
+    fi
+
+    # Create user
+    useradd -m -G "$group" -s /bin/bash "$username"
+    echo "$username:$password" | chpasswd
+    echo "User $username created and added to group $group."
+}
+
+# Function to delete users
+delete_user() {
+    local username=$1
+
+    # Check if user exists
+    if ! id "$username" &>/dev/null; then
+        echo "User $username does not exist."
+        return
+    fi
+
+    # Delete user and their home directory
+    userdel -r "$username"
+    echo "User $username deleted."
+}
+
+# Function to disable users
+disable_user() {
+    local username=$1
+
+    # Check if user exists
+    if ! id "$username" &>/dev/null; then
+        echo "User $username does not exist."
+        return
+    fi
+
+    # Disable user
+    usermod -L "$username"
+    echo "User $username has been disabled."
+}
+
+# Menu options
+echo "Choose an option:"
+echo "1. Create user"
+echo "2. Delete user"
+echo "3. Disable user"
+read -p "Enter your choice: " choice
+
+case $choice in
+    1)
+        read -p "Enter username: " username
+        read -p "Enter password: " password
+        read -p "Enter group: " group
+        create_user "$username" "$password" "$group"
+        ;;
+    2)
+        read -p "Enter username to delete: " username
+        delete_user "$username"
+        ;;
+    3)
+        read -p "Enter username to disable: " username
+        disable_user "$username"
+        ;;
+    *)
+        echo "Invalid choice."
+        ;;
+esac
+chmod +x user_management.sh
+sudo ./user_management.sh
+Enter username: alice
+Enter password: Alice123!
+Enter group: developers
+User alice created and added to group developers.
+Enter username to delete: alice
+User alice deleted.
+Enter username to disable: alice
+User alice has been disabled.
